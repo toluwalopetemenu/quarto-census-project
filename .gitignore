@@ -1,0 +1,20 @@
+# R and Quarto
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+/_site/
+/.quarto/
+
+# Keep main HTML, ignore intermediate files
+*_files/
+*_cache/
+
+# Data files
+*.csv
+*.xlsx
+
+# System files
+.DS_Store
+Thumbs.db
