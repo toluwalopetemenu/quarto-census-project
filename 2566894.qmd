@@ -1,0 +1,200 @@
+---
+title: "Analysing Household Census Data"
+author: "Toluwalope Temenu"
+format: 
+  html:
+    code-fold: true
+    code-link: true
+    toc: true
+    number-sections: true
+    embed-resources: true
+fig-cap-location: bottom
+fig-width: 14
+fig-height: 6
+out-width: '100%'
+fig-dpi: 300
+warning: false
+message: false
+editor: visual
+---
+
+## Introduction
+
+This is an analysis of a modified snapshot of data collected during a household census conducted in England in 2021.
+
+### Summary Statistics:
+
+An overview of our data reveals that a total of 10,565 unique household were captured in this snapshot with household ID (115231) having the highest number (16) of persons living in a household. About 48% (13,326) of individuals are Female while 62% identified as not female. The Mean Age of individuals in our data is approximately 36 years, with an average annual income of £27766. In terms of ethnic distribution 69% of respondents are White, about 13% are Asians, 12% are black, while about 6% are either Hispanic or other ethnic groups. 87% of the people in this data also have rooms in the accommodation that includes a kitchen, bathroom and toilet, behind a door that only the household uses.
+
+```{r}
+#| label: loading-libraries
+#| include: false
+
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(forcats)
+library(dplyr)
+library(patchwork)
+```
+
+```{r}
+#| label: loading-dataset
+#| include: false
+data <- read_csv("C:/Users/HP/Downloads/data.csv", na = c('NA', ''), show_col_types = FALSE)
+```
+
+```{r}
+#| label: data-cleaning
+#| include: false
+data <- data |> janitor::clean_names()
+```
+
+## Exploratory Data Analysis
+
+To develop further understanding of this snapshot censor data set, a series of investigation will be carried out through a series of questions to form our EDA process
+
+### 1. Age:
+
+-   What is the age distribution of individuals in our data? An interesting observation from the graph below shows that respondents with observations recorded as '*Not Applicable'* are between age 0 to about 13years. This tells us that children and teenagers were also included in the census taken. Also, valuable to note that metrics such as their annual income, marital status would not apply to these age group. For this purpose, we can clearly keep in mind that where they appears in our graphs it's in reference to children or teenagers. Marital status also strongly correlates with age, there is a wide age range for married individuals about mid 20s to 70+. Most never married individuals are younger. For those who are Widowed result shows most of them are are at older phase of their years around 65-80 years.
+
+```{r}
+#| label: fig-age-distribution_1
+#| fig-cap: "Age distribution by Marital Status"
+#| echo: false
+ggplot(data, aes(x=mar_stat, y=age, fill = mar_stat)) +
+  geom_boxplot() +
+  labs(x= "Marital Status", y = 'Age', title = 'Age by Marital Status')
+```
+
+### 2. Marital Status:
+
+-   What is the total count of marital status across the different categories? There is an equal distribution (50%) between the entire population and those who identified as females. Among those who have never been married 54% of them are female. 71% of those divorced identified as not female. Marital status is also not applicable 22.4% of individuals in this data snapshot.
+
+```{r}
+#| label: Fig-marital
+#| fig-cap: "Marital Status of all individuals vs Females"
+#| echo: false
+
+Female <- data |> filter(female == 0)
+# Plot 1:
+p1 <- ggplot(data, aes(x=fct_infreq(mar_stat),fill = mar_stat)) +
+  geom_bar(show.legend = FALSE) +
+  geom_text(aes(label = after_stat(count)), stat = 'count', vjust = -0.5) +
+  labs(title = 'All Individuals', x= 'Marital Status', y = 'count') +
+scale_fill_brewer(palette = "Greens") +   
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 13),
+    legend.position = "none",
+    legend.title = element_text(face = "bold"),
+    axis.text = element_text(colour = "black")
+  )
+
+#Plot 2:
+p2 <- ggplot(Female, aes(x=fct_infreq(mar_stat), fill = mar_stat)) +
+  geom_bar() +
+  geom_text(aes(label = after_stat(count)), stat = 'count', vjust = -0.5) +
+  labs(title = 'Females', x='Marital Status', y ='count') +
+scale_fill_brewer(palette = "Greens") +   
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "none",
+    legend.title = element_text(face = "bold"),
+    axis.text = element_text(colour = "black")
+  )
+
+(p1 + p2) + plot_layout(guides = 'collect')
+```
+
+### 3. Education
+
+-   What is the relationship between education and annual income? From the chat below we see a positive relationship between education and annual income. Individuals with a Masters degree or higher earn more than people with a bachelors degree. This variation in earnings also exists across all levels of education. Another interesting insights in our snapshot is that Females earned significantly higher than those who were not females. A wide variation also exits as they seem to further their education more than the other group.
+
+```{r}
+#| label: fig-Mean-Income-per-education-Level
+#| fig-cap: "Mean Income versus Education level grouped by gender"
+#| echo: false
+
+data2 <- data |> 
+  mutate(
+    female = ifelse(female == 1, 'not Female', 'Female'))
+    
+income <- data2 |> 
+  filter(!is.na(highest_ed), !is.na(inc), !is.na(female)) |> group_by(highest_ed, female) |> 
+    summarise(mean_income = mean(inc), .groups ='drop')
+
+income <- income |> mutate(highest_ed = reorder(highest_ed, mean_income))
+
+ggplot(income, aes(x=highest_ed, y= mean_income, fill = female)) +
+  geom_col(position = position_dodge()) +
+  coord_flip() +
+  labs(
+    title = "Average Annual Income by Education Level",
+    x = "Education Level",
+    y = "Average Annual Income"
+  ) +
+  scale_fill_brewer(palette = "Greens") +   
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    axis.text = element_text(colour = "black")
+  )
+```
+
+### 4. Ethnicity
+
+-   The chat below also shows a positive relationship between education and income across all ethnic groups and also highlights income disparities within ethic groups. White and Hispanic individuals have the highest income averages across most education categories especially those with masters and higher earning significantly higher than their counterpart in other groups.
+
+```{r}
+#| label: Ethnicity-distribution
+#| fig-cap: "Ethnicity versus Education and Income"
+#| echo: false
+income <- data |>
+  group_by(eth, highest_ed) |>
+  summarise(mean_income = mean(inc, na.rm=TRUE), .groups = 'drop')|>
+  drop_na(eth, highest_ed, mean_income)
+
+ggplot(income, aes(x=eth, y=mean_income, fill = highest_ed)) +
+  geom_col(position = 'dodge') +
+  coord_flip() +
+  labs(
+    title = 'Average Annual Income by Ethnicity and educational Level',
+    x= 'Ethnicity',
+    y = 'Average annual Income'
+  ) +
+  scale_fill_brewer(palette = "Set2") +   
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    axis.text = element_text(colour = "black")
+  )
+```
+
+### 5. Age, Income and Marital Status:
+
+-   On inspecting the graph below suggests that income and age both vary by marital status. Generally married and widowed people are older and have higher income while those never married individuals are younger with lower incomes. There are also outliers in the never married group with some older individuals above 50 years who have never been married as at the time this census was taken.
+
+```{r}
+#| label: fig-age-distribution_2
+#| fig-cap: "Age distribution by Income and Marital Status"
+#| echo: false
+ggplot(data, aes(x=inc, y=age, fill = mar_stat)) +
+  geom_boxplot(na.rm = TRUE) +
+  labs(x= "Annual income", y = 'Age', title = 'Age by Income')
+```
+
+## Conclusion
+
+-   This analysis investigated several variables in the data set, focusing particularly on the relationship between education, Income and marital status. The results show that individuals with higher levels of education tend to earn significantly more than those with lower qualifications.
+
+-   Particularly in this data, Females attained higher educational levels than the other gender. And because our results also revealed that individuals with masters level or higher earned more, it can be inferred that females earned significantly higher than the other group.
+
+-   Disparities exits across ethic groups with individuals from White and Hispanic background earning more on average than other groups. These differences highlights inequality in income distribution suggesting a need for interventions to promote a fair economic outcomes across workplace settings.
+
+-   Finally, the relationship between all three variables reveals that married and widowed individuals are typically older and have higher average incomes. This could be due to various factors not covered by this data such as years of working experience. An assumption would be that because they are older, they have more experience and attained managerial or senior roles. While those individuals who have never been married are younger, although there are significant outlines in this group, they tend to earn less.
