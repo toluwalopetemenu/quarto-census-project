@@ -1,6 +1,9 @@
 # Quarto Census Project
 
-View the analysis here: [Open Report](https://htmlpreview.github.io/?https://github.com/toluwalopeteemenu/quarto-census-project/blob/main/2566894.html)
+View the analysis here: [Open Report](https://toluwalopetemenu.github.io/quarto-census-project/census-analysis.html
+
+)
 
 ## About
+
 Statistical analysis project created with R and Quarto.
